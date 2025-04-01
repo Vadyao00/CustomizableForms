@@ -29,7 +29,7 @@ public static class ModelBuilderExtensions
                 EmailConfirmed = true,
                 SecurityStamp = Guid.NewGuid().ToString(),
                 IsBlocked = false,
-                CreatedAt = new DateTime(2023, 1, 1),
+                CreatedAt = new DateTime(2023, 1, 1, 0 ,0, 0, DateTimeKind.Utc),
                 PreferredLanguage = "en",
                 PreferredTheme = "light"
             };
@@ -58,7 +58,7 @@ public static class ModelBuilderExtensions
                 EmailConfirmed = true,
                 SecurityStamp = Guid.NewGuid().ToString(),
                 IsBlocked = false,
-                CreatedAt = new DateTime(2023, 1, 1),
+                CreatedAt = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 PreferredLanguage = "en",
                 PreferredTheme = "light"
             };
@@ -83,8 +83,8 @@ public static class ModelBuilderExtensions
                 Description = "A simple survey to gather feedback from customers about our products and services.",
                 Topic = "Feedback",
                 IsPublic = true,
-                CreatedAt = new DateTime(2023, 1, 2),
-                UpdatedAt = new DateTime(2023, 1, 2)
+                CreatedAt = new DateTime(2023, 1, 2, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2023, 1, 2, 0, 0, 0, DateTimeKind.Utc)
             });
             
             modelBuilder.Entity<TemplateTag>().HasData(

@@ -35,7 +35,8 @@ public class QuestionConfiguration : IEntityTypeConfiguration<Question>
             .HasDefaultValue(true);
 
         builder.Property(e => e.Options)
-            .HasColumnType("jsonb");
+            .HasColumnType("jsonb")
+            .IsRequired(false);
 
         builder.HasOne(e => e.Template)
             .WithMany(e => e.Questions)
