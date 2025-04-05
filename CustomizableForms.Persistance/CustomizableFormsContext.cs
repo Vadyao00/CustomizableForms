@@ -42,9 +42,6 @@ public class CustomizableFormsContext : IdentityDbContext<User>
             
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
 
-        //подключение расширения pg_trgm для полнотекстового поиска
-        //modelBuilder.HasPostgresExtension("pg_trgm");
-            
         modelBuilder.SeedInitialData();
     }
 }

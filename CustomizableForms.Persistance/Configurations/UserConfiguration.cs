@@ -8,14 +8,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> builder)
     {
-        builder.Property(e => e.IsBlocked)
-            .IsRequired()
-            .HasDefaultValue(false);
-
-        builder.Property(e => e.CreatedAt)
-            .IsRequired()
-            .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
         builder.Property(e => e.PreferredLanguage)
             .IsRequired()
             .HasMaxLength(10)
@@ -35,7 +27,5 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(e => e.NormalizedUserName)
             .HasDatabaseName("UserNameIndex")
             .IsUnique();
-                
-        builder.ToTable("AspNetUsers");
     }
 }

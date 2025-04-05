@@ -1,5 +1,9 @@
 ﻿using System.Text;
+using Contracts.IRepositories;
+using Contracts.IServices;
+using CustomizableForms.Application.Services;
 using CustomizableForms.Domain.ConfigurationModels;
+using CustomizableForms.Domain.DTOs;
 using CustomizableForms.Domain.Entities;
 using CustomizableForms.LoggerService;
 using CustomizableForms.Persistance;
@@ -18,15 +22,15 @@ public static class ServiceExtensions
         {
             options.AddPolicy("CorsPolicy", builder =>
             builder
+                .WithOrigins()
                 .AllowAnyHeader()
-                .AllowAnyOrigin()
                 .AllowAnyMethod()
                 .AllowCredentials());
         });
 
     public static void ConfigureDbContext(this IServiceCollection services, IConfiguration configuration) =>
         services.AddDbContext<CustomizableFormsContext>(opts =>
-            opts.UseNpgsql(configuration.GetConnectionString("DefaultConnection"), b =>
+            opts.UseNpgsql(configuration.GetConnectionString("RemoteConnection"), b =>
                 {
                     b.EnableRetryOnFailure();
                 })
@@ -36,32 +40,18 @@ public static class ServiceExtensions
     public static void ConfigureLoggerService(this IServiceCollection services) =>
         services.AddSingleton<ILoggerManager, LoggerManager>();
     
-    // public static void ConfigureRepositoryManager(this IServiceCollection services) =>
-    //     services.AddScoped<IRepositoryManager, RepositoryManager>();
-    //
-    // public static void ConfigureServiceManager(this IServiceCollection services) =>
-    //     services.AddScoped<IServiceManager, ServiceManager>();
-
-    public static void ConfigureIdentity(this IServiceCollection services)
-    {
-        var builder = services.AddIdentity<User, IdentityRole>(o =>
-            {
-                o.Password.RequireDigit = true;
-                o.Password.RequireLowercase = false;
-                o.Password.RequireUppercase = false;
-                o.Password.RequireNonAlphanumeric = false;
-                o.Password.RequiredLength = 10;
-                o.User.RequireUniqueEmail = true;
-            })
-            .AddEntityFrameworkStores<CustomizableFormsContext>()
-            .AddDefaultTokenProviders();
-    }
+    public static void ConfigureRepositoryManager(this IServiceCollection services) =>
+        services.AddScoped<IRepositoryManager, RepositoryManager>();
+    
+    public static void ConfigureServiceManager(this IServiceCollection services) =>
+        services.AddScoped<IServiceManager, ServiceManager>();
     
     public static void ConfigureJWT(this IServiceCollection services, IConfiguration configuration)
     {
         var jwtConfiguration = new JwtConfiguration();
         configuration.Bind(jwtConfiguration.Section, jwtConfiguration);
 
+        var key = "SECRETSECRETSECRETSECRETSECRETSECRETSECRET";
         var secretKey = configuration.GetValue<string>("SECRET");
 
         services.AddAuthentication(opt =>
@@ -80,7 +70,17 @@ public static class ServiceExtensions
 
                     ValidIssuer = jwtConfiguration.ValidIssuer,
                     ValidAudience = jwtConfiguration.ValidAudience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        context.Token = context.Request.Cookies["AccessToken"];
+                        
+                        return Task.CompletedTask;
+                    }
                 };
             });
     }
@@ -93,7 +93,7 @@ public static class ServiceExtensions
         services.AddSwaggerGen(s =>
         {
             s.SwaggerDoc("v1", new OpenApiInfo { Title = "Cinema API", Version = "v1" });
-
+            
             s.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,
