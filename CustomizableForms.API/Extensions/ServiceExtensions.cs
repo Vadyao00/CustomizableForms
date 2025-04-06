@@ -3,12 +3,9 @@ using Contracts.IRepositories;
 using Contracts.IServices;
 using CustomizableForms.Application.Services;
 using CustomizableForms.Domain.ConfigurationModels;
-using CustomizableForms.Domain.DTOs;
-using CustomizableForms.Domain.Entities;
 using CustomizableForms.LoggerService;
 using CustomizableForms.Persistance;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -51,9 +48,8 @@ public static class ServiceExtensions
         var jwtConfiguration = new JwtConfiguration();
         configuration.Bind(jwtConfiguration.Section, jwtConfiguration);
 
-        var key = "SECRETSECRETSECRETSECRETSECRETSECRETSECRET";
-        var secretKey = configuration.GetValue<string>("SECRET");
-
+        var sec = jwtConfiguration.Secret;
+        
         services.AddAuthentication(opt =>
             {
                 opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -70,7 +66,7 @@ public static class ServiceExtensions
 
                     ValidIssuer = jwtConfiguration.ValidIssuer,
                     ValidAudience = jwtConfiguration.ValidAudience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfiguration.Secret))
                 };
 
                 options.Events = new JwtBearerEvents

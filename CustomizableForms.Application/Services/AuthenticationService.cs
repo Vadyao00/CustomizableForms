@@ -89,7 +89,7 @@ public sealed class AuthenticationService : IAuthenticationService
     
     private SigningCredentials GetSigningCredentials()
     {
-        var key = Encoding.UTF8.GetBytes("SECRETSECRETSECRETSECRETSECRETSECRETSECRET");
+        var key = Encoding.UTF8.GetBytes(_jwtConfiguration.Secret);
         var secret = new SymmetricSecurityKey(key);
 
         return new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
@@ -103,7 +103,7 @@ public sealed class AuthenticationService : IAuthenticationService
             new Claim(ClaimTypes.Email, _user.Email)
         };
         
-        claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+        claims.Add(new Claim(ClaimTypes.Role, "User"));
 
         return claims;
     }
@@ -139,7 +139,7 @@ public sealed class AuthenticationService : IAuthenticationService
             ValidateAudience = true,
             ValidateIssuer = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("SECRETSECRETSECRETSECRETSECRETSECRETSECRET")),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfiguration.Secret)),
             ValidateLifetime = true,
             ValidIssuer = _jwtConfiguration.ValidIssuer,
             ValidAudience = _jwtConfiguration.ValidAudience
