@@ -6,6 +6,11 @@ namespace Contracts.IServices;
 public interface IUserService
 {
     Task<ApiBaseResponse> GetUserByEmailAsync(string email, User currentUser);
-    
+    Task<ApiBaseResponse> GetUserByIdAsync(Guid userId, User currentUser);
     Task<ApiBaseResponse> DeleteUserAsync(string email, User currentUser);
+    
+    // Admin functionality
+    Task<ApiBaseResponse> GetAllUsersAsync(User currentUser);
+    Task<ApiBaseResponse> BlockUserAsync(Guid userId, User currentUser);
+    Task<ApiBaseResponse> UnblockUserAsync(Guid userId, User currentUser);
 }

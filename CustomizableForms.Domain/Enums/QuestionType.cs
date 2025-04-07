@@ -2,9 +2,8 @@
 
 public enum QuestionType
 {
-    SingleLineText = 1,
-    MultiLineText = 2,
-    Integer = 3,
-    Checkbox = 4,
-    Select = 5
+    SingleLineString = 0,
+    MultiLineText = 1,
+    Integer = 2,
+    Checkbox = 3
 }

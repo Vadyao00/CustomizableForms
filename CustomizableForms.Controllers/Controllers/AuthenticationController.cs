@@ -8,14 +8,15 @@ namespace CustomizableForms.Controllers.Controllers;
 
 [Route("api/authentication")]
 [ApiController]
-public class AuthenticationController(IServiceManager service, IHttpContextAccessor accessor) : ApiControllerBase
+public class AuthenticationController(IServiceManager service, IHttpContextAccessor accessor)
+    : ApiControllerBase(service, accessor)
 {
     [HttpPost]
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> RegisterUser([FromBody] UserForRegistrationDto userForRegistration)
     {
         var baseResult = await service.AuthenticationService.RegisterUser(userForRegistration);
-        if(!baseResult.Suссess)
+        if(!baseResult.Success)
             return ProccessError(baseResult);
         
         return StatusCode(201);
@@ -26,7 +27,7 @@ public class AuthenticationController(IServiceManager service, IHttpContextAcces
     public async Task<IActionResult> Authenticate([FromBody] UserForAuthenticationDto user)
     {
         var baseResult = await service.AuthenticationService.ValidateUser(user);
-        if(!baseResult.Suссess)
+        if(!baseResult.Success)
             return ProccessError(baseResult);
 
         var tokenDto = await service.AuthenticationService.CreateToken(populateExp: true);

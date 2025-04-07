@@ -8,7 +8,8 @@ namespace CustomizableForms.Controllers.Controllers;
 [Route("api/users")]
 [Authorize(Roles = "Admin")]
 [ApiController]
-public class UserController(IServiceManager serviceManager, IHttpContextAccessor accessor) : ApiControllerBase
+public class UserController(IServiceManager serviceManager, IHttpContextAccessor accessor)
+    : ApiControllerBase(serviceManager, accessor)
 {
     [HttpDelete("{email}")]
     public async Task<IActionResult> DeleteUser(string email)
@@ -22,7 +23,7 @@ public class UserController(IServiceManager serviceManager, IHttpContextAccessor
         var currentUser = serviceManager.AuthenticationService.GetCurrentUserFromTokenAsync(token);
         
         var baseResult = await serviceManager.UserService.DeleteUserAsync(email, currentUser.Result);
-        if(!baseResult.Suссess)
+        if(!baseResult.Success)
             return ProccessError(baseResult);
         
         return Ok();

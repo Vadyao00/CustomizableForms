@@ -14,4 +14,6 @@ public record UserDto
     
     [Display(Name = "Статус")]
     public string? Status { get; set; }
+    
+    public List<string>? Roles { get; set; }
 }

@@ -48,9 +48,17 @@ public sealed class AuthenticationService : IAuthenticationService
         {
             _manager.User.CreateUser(user);
             await _manager.SaveAsync();
+            
+            var userRole = await _manager.Role.GetRoleByNameAsync("User", trackChanges: false);
+            if (userRole != null)
+            {
+                _manager.Role.AssignRoleToUser(user.Id, userRole.Id);
+                await _manager.SaveAsync();
+            }
         }
         catch (Exception e)
         {
+            _logger.LogError($"Error registering user: {e.Message}");
             return new InvalidEmailBadRequestResponse();
         }
 
@@ -61,7 +69,7 @@ public sealed class AuthenticationService : IAuthenticationService
     {
         _user = await _manager.User.GetUserByEmailAsync(userForAuth.Email);
 
-        if (_user == null || !BCrypt.Net.BCrypt.Verify(userForAuth.Password, _user.PasswordHash))
+        if (_user == null || !BCrypt.Net.BCrypt.Verify(userForAuth.Password, _user.PasswordHash) || !_user.IsActive)
         {
             return new BadUserBadRequestResponse();
         }
@@ -78,6 +86,7 @@ public sealed class AuthenticationService : IAuthenticationService
         var refreshToken = GenerateRefreshToken();
 
         _user.RefreshToken = refreshToken;
+        _user.RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(int.Parse(_jwtConfiguration.Expires));
 
         _manager.User.UpdateUser(_user);
         await _manager.SaveAsync();
@@ -103,7 +112,12 @@ public sealed class AuthenticationService : IAuthenticationService
             new Claim(ClaimTypes.Email, _user.Email)
         };
         
-        claims.Add(new Claim(ClaimTypes.Role, "User"));
+        var userRoles = await _manager.Role.GetUserRolesAsync(_user.Id, trackChanges: false);
+        
+        foreach (var role in userRoles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role.Name));
+        }
 
         return claims;
     }
@@ -166,7 +180,7 @@ public sealed class AuthenticationService : IAuthenticationService
         var userEmail = principal.FindFirst(ClaimTypes.Email)?.Value;
         var user = await _manager.User.GetUserByEmailAsync(userEmail);
 
-        if (user == null || user.RefreshToken != tokenDto.RefreshToken || user.RefreshTokenExpiryTime <= DateTime.Now)
+        if (user == null || user.RefreshToken != tokenDto.RefreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow || !user.IsActive)
         {
             return new RefreshTokenBadRequestResponse();
         }
