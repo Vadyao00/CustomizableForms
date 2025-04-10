@@ -48,6 +48,11 @@ public class UserService : IUserService
         return new ApiOkResponse<User>(existingUser);
     }
 
+    public async Task<User?> GetUserByIdFromTokenAsync(Guid userId)
+    {
+        return await _repositoryManager.User.GetUserByIdAsync(userId, trackChanges: false);
+    }
+    
     public async Task<ApiBaseResponse> DeleteUserAsync(string email, User currentUser)
     {
         if (!CheckUser(currentUser))
@@ -67,14 +72,11 @@ public class UserService : IUserService
         return new ApiOkResponse<User>(user);
     }
     
-    // Admin functionality
-    
     public async Task<ApiBaseResponse> GetAllUsersAsync(User currentUser)
     {
         if (!CheckUser(currentUser))
             return new BadUserBadRequestResponse();
         
-        // Check if current user is an admin
         var currentUserRoles = await _repositoryManager.Role.GetUserRolesAsync(currentUser.Id, trackChanges: false);
         if (!currentUserRoles.Any(r => r.Name == "Admin"))
         {
@@ -84,7 +86,6 @@ public class UserService : IUserService
         var users = await _repositoryManager.User.GetAllUsersAsync(trackChanges: false);
         var usersDto = _mapper.Map<IEnumerable<UserDto>>(users);
         
-        // Enrich with roles
         foreach (var userDto in usersDto)
         {
             var user = users.FirstOrDefault(u => u.Id.ToString() == userDto.Id);
@@ -103,7 +104,6 @@ public class UserService : IUserService
         if (!CheckUser(currentUser))
             return new BadUserBadRequestResponse();
         
-        // Check if current user is an admin
         var currentUserRoles = await _repositoryManager.Role.GetUserRolesAsync(currentUser.Id, trackChanges: false);
         if (!currentUserRoles.Any(r => r.Name == "Admin"))
         {
@@ -116,7 +116,6 @@ public class UserService : IUserService
             return new ApiBadRequestResponse("User not found");
         }
         
-        // Don't allow blocking yourself
         if (user.Id == currentUser.Id)
         {
             return new ApiBadRequestResponse("You cannot block yourself");
@@ -134,7 +133,6 @@ public class UserService : IUserService
         if (!CheckUser(currentUser))
             return new BadUserBadRequestResponse();
         
-        // Check if current user is an admin
         var currentUserRoles = await _repositoryManager.Role.GetUserRolesAsync(currentUser.Id, trackChanges: false);
         if (!currentUserRoles.Any(r => r.Name == "Admin"))
         {

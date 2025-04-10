@@ -63,21 +63,16 @@ public class TemplateService : ITemplateService
                 return new ApiBadRequestResponse("Template not found");
             }
 
-            // Check access permissions
             if (!template.IsPublic && currentUser == null)
             {
                 return new ApiBadRequestResponse("You do not have permission to view this template");
             }
 
-            // Check if user has Admin role
             bool isAdmin = false;
-            if (currentUser != null)
-            {
-                var userRoles = await _repository.Role.GetUserRolesAsync(currentUser.Id, trackChanges: false);
-                isAdmin = userRoles.Any(r => r.Name == "Admin");
-            }
+            
+            var userRoles = await _repository.Role.GetUserRolesAsync(currentUser.Id, trackChanges: false);
+            isAdmin = userRoles.Any(r => r.Name == "Admin");
 
-            // Non-public templates can only be accessed by creator, allowed users, or admins
             if (!template.IsPublic && currentUser != null && 
                 template.CreatorId != currentUser.Id && 
                 !template.AllowedUsers.Any(au => au.UserId == currentUser.Id) &&
@@ -88,12 +83,10 @@ public class TemplateService : ITemplateService
 
             var templateDto = _mapper.Map<TemplateDto>(template);
 
-            // Add extra aggregated data
             templateDto.LikesCount = template.Likes?.Count ?? 0;
             templateDto.CommentsCount = template.Comments?.Count ?? 0;
             templateDto.FormsCount = template.Forms?.Count ?? 0;
             
-            // Extract tags
             if (template.TemplateTags != null)
             {
                 templateDto.Tags = template.TemplateTags
@@ -111,11 +104,48 @@ public class TemplateService : ITemplateService
         }
     }
 
+    public async Task<ApiBaseResponse> GetTemplateByIdWithoutTokenAsync(Guid templateId)
+    {
+        try
+        {
+            var template = await _repository.Template.GetTemplateByIdAsync(templateId, trackChanges: false);
+            if (template == null)
+            {
+                return new ApiBadRequestResponse("Template not found");
+            }
+
+            if (!template.IsPublic)
+            {
+                return new ApiBadRequestResponse("You do not have permission to view this template");
+            }
+
+            var templateDto = _mapper.Map<TemplateDto>(template);
+
+            templateDto.LikesCount = template.Likes?.Count ?? 0;
+            templateDto.CommentsCount = template.Comments?.Count ?? 0;
+            templateDto.FormsCount = template.Forms?.Count ?? 0;
+            
+            if (template.TemplateTags != null)
+            {
+                templateDto.Tags = template.TemplateTags
+                    .Select(tt => tt.Tag?.Name)
+                    .Where(name => !string.IsNullOrEmpty(name))
+                    .ToList();
+            }
+
+            return new ApiOkResponse<TemplateDto>(templateDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error in {nameof(GetTemplateByIdAsync)}: {ex.Message}");
+            return new ApiBadRequestResponse($"Error retrieving template: {ex.Message}");
+        }
+    }
+    
     public async Task<ApiBaseResponse> GetUserTemplatesAsync(Guid userId, User currentUser)
     {
         try
         {
-            // Check if user has Admin role
             bool isAdmin = false;
             if (currentUser != null)
             {
@@ -123,7 +153,6 @@ public class TemplateService : ITemplateService
                 isAdmin = userRoles.Any(r => r.Name == "Admin");
             }
 
-            // Only the user themselves or admins can see a user's templates
             if (currentUser.Id != userId && !isAdmin)
             {
                 return new ApiBadRequestResponse("You do not have permission to view these templates");
@@ -132,7 +161,6 @@ public class TemplateService : ITemplateService
             var templates = await _repository.Template.GetUserTemplatesAsync(userId, trackChanges: false);
             var templatesDto = _mapper.Map<IEnumerable<TemplateDto>>(templates);
 
-            // Add extra aggregated data
             foreach (var templateDto in templatesDto)
             {
                 var template = templates.FirstOrDefault(t => t.Id == templateDto.Id);
@@ -142,7 +170,6 @@ public class TemplateService : ITemplateService
                     templateDto.CommentsCount = template.Comments?.Count ?? 0;
                     templateDto.FormsCount = template.Forms?.Count ?? 0;
                     
-                    // Extract tags
                     if (template.TemplateTags != null)
                     {
                         templateDto.Tags = template.TemplateTags
@@ -174,7 +201,6 @@ public class TemplateService : ITemplateService
             var templates = await _repository.Template.GetAccessibleTemplatesAsync(currentUser.Id, trackChanges: false);
             var templatesDto = _mapper.Map<IEnumerable<TemplateDto>>(templates);
 
-            // Add extra aggregated data
             foreach (var templateDto in templatesDto)
             {
                 var template = templates.FirstOrDefault(t => t.Id == templateDto.Id);
@@ -184,7 +210,6 @@ public class TemplateService : ITemplateService
                     templateDto.CommentsCount = template.Comments?.Count ?? 0;
                     templateDto.FormsCount = template.Forms?.Count ?? 0;
                     
-                    // Extract tags
                     if (template.TemplateTags != null)
                     {
                         templateDto.Tags = template.TemplateTags
@@ -211,7 +236,6 @@ public class TemplateService : ITemplateService
             var templates = await _repository.Template.GetPopularTemplatesAsync(count, trackChanges: false);
             var templatesDto = _mapper.Map<IEnumerable<TemplateDto>>(templates);
 
-            // Add extra aggregated data
             foreach (var templateDto in templatesDto)
             {
                 var template = templates.FirstOrDefault(t => t.Id == templateDto.Id);
@@ -221,7 +245,6 @@ public class TemplateService : ITemplateService
                     templateDto.CommentsCount = template.Comments?.Count ?? 0;
                     templateDto.FormsCount = template.Forms?.Count ?? 0;
                     
-                    // Extract tags
                     if (template.TemplateTags != null)
                     {
                         templateDto.Tags = template.TemplateTags
@@ -248,7 +271,6 @@ public class TemplateService : ITemplateService
             var templates = await _repository.Template.GetRecentTemplatesAsync(count, trackChanges: false);
             var templatesDto = _mapper.Map<IEnumerable<TemplateDto>>(templates);
 
-            // Add extra aggregated data
             foreach (var templateDto in templatesDto)
             {
                 var template = templates.FirstOrDefault(t => t.Id == templateDto.Id);
@@ -258,7 +280,6 @@ public class TemplateService : ITemplateService
                     templateDto.CommentsCount = template.Comments?.Count ?? 0;
                     templateDto.FormsCount = template.Forms?.Count ?? 0;
                     
-                    // Extract tags
                     if (template.TemplateTags != null)
                     {
                         templateDto.Tags = template.TemplateTags
@@ -285,7 +306,6 @@ public class TemplateService : ITemplateService
             var templates = await _repository.Template.SearchTemplatesAsync(searchTerm, trackChanges: false);
             var templatesDto = _mapper.Map<IEnumerable<TemplateDto>>(templates);
 
-            // Add extra aggregated data
             foreach (var templateDto in templatesDto)
             {
                 var template = templates.FirstOrDefault(t => t.Id == templateDto.Id);
@@ -295,7 +315,6 @@ public class TemplateService : ITemplateService
                     templateDto.CommentsCount = template.Comments?.Count ?? 0;
                     templateDto.FormsCount = template.Forms?.Count ?? 0;
                     
-                    // Extract tags
                     if (template.TemplateTags != null)
                     {
                         templateDto.Tags = template.TemplateTags
@@ -338,12 +357,10 @@ public class TemplateService : ITemplateService
 
             _repository.Template.CreateTemplate(template);
             
-            // Process tags
             if (templateDto.Tags != null && templateDto.Tags.Any())
             {
                 foreach (var tagName in templateDto.Tags)
                 {
-                    // Check if tag exists, if not create it
                     var tag = await _repository.Tag.GetTagByNameAsync(tagName, trackChanges: true);
                     if (tag == null)
                     {
@@ -355,7 +372,6 @@ public class TemplateService : ITemplateService
                         _repository.Tag.CreateTag(tag);
                     }
 
-                    // Create template-tag relationship
                     var templateTag = new TemplateTag
                     {
                         TemplateId = template.Id,
@@ -366,7 +382,6 @@ public class TemplateService : ITemplateService
                 }
             }
 
-            // Process allowed users if not public
             if (!template.IsPublic && templateDto.AllowedUserEmails != null && templateDto.AllowedUserEmails.Any())
             {
                 foreach (var email in templateDto.AllowedUserEmails)
@@ -387,11 +402,9 @@ public class TemplateService : ITemplateService
 
             await _repository.SaveAsync();
 
-            // Retrieve the saved template with all relationships
             var savedTemplate = await _repository.Template.GetTemplateByIdAsync(template.Id, trackChanges: false);
             var templateResultDto = _mapper.Map<TemplateDto>(savedTemplate);
 
-            // Add tags
             if (savedTemplate.TemplateTags != null)
             {
                 templateResultDto.Tags = savedTemplate.TemplateTags
@@ -419,7 +432,6 @@ public class TemplateService : ITemplateService
                 return new ApiBadRequestResponse("Template not found");
             }
 
-            // Check if user has Admin role
             bool isAdmin = false;
             if (currentUser != null)
             {
@@ -427,13 +439,11 @@ public class TemplateService : ITemplateService
                 isAdmin = userRoles.Any(r => r.Name == "Admin");
             }
 
-            // Only the creator or admins can update the template
             if (template.CreatorId != currentUser.Id && !isAdmin)
             {
                 return new ApiBadRequestResponse("You do not have permission to update this template");
             }
 
-            // Update template properties
             template.Title = templateDto.Title;
             template.Description = templateDto.Description;
             template.Topic = templateDto.Topic;
@@ -441,10 +451,8 @@ public class TemplateService : ITemplateService
             template.IsPublic = templateDto.IsPublic;
             template.UpdatedAt = DateTime.UtcNow;
 
-            // Update tags
             if (template.TemplateTags != null)
             {
-                // Remove existing template tags
                 foreach (var tt in template.TemplateTags.ToList())
                 {
                     template.TemplateTags.Remove(tt);
@@ -456,7 +464,6 @@ public class TemplateService : ITemplateService
                 template.TemplateTags ??= new List<TemplateTag>();
                 foreach (var tagName in templateDto.Tags)
                 {
-                    // Check if tag exists, if not create it
                     var tag = await _repository.Tag.GetTagByNameAsync(tagName, trackChanges: true);
                     if (tag == null)
                     {
@@ -468,7 +475,6 @@ public class TemplateService : ITemplateService
                         _repository.Tag.CreateTag(tag);
                     }
 
-                    // Create template-tag relationship
                     var templateTag = new TemplateTag
                     {
                         TemplateId = template.Id,
@@ -478,10 +484,8 @@ public class TemplateService : ITemplateService
                 }
             }
 
-            // Update allowed users if not public
             if (template.AllowedUsers != null)
             {
-                // Remove existing allowed users
                 foreach (var au in template.AllowedUsers.ToList())
                 {
                     template.AllowedUsers.Remove(au);
@@ -528,7 +532,6 @@ public class TemplateService : ITemplateService
                 return new ApiBadRequestResponse("Template not found");
             }
 
-            // Check if user has Admin role
             bool isAdmin = false;
             if (currentUser != null)
             {
@@ -536,7 +539,6 @@ public class TemplateService : ITemplateService
                 isAdmin = userRoles.Any(r => r.Name == "Admin");
             }
 
-            // Only the creator or admins can delete the template
             if (template.CreatorId != currentUser.Id && !isAdmin)
             {
                 return new ApiBadRequestResponse("You do not have permission to delete this template");
@@ -564,13 +566,11 @@ public class TemplateService : ITemplateService
                 return new ApiBadRequestResponse("Template not found");
             }
 
-            // Check access permissions for non-public templates
             if (!template.IsPublic && currentUser == null)
             {
                 return new ApiBadRequestResponse("You do not have permission to view this template's questions");
             }
 
-            // Check if user has Admin role
             bool isAdmin = false;
             if (currentUser != null)
             {
@@ -578,7 +578,6 @@ public class TemplateService : ITemplateService
                 isAdmin = userRoles.Any(r => r.Name == "Admin");
             }
 
-            // Non-public templates can only be accessed by creator, allowed users, or admins
             if (!template.IsPublic && currentUser != null && 
                 template.CreatorId != currentUser.Id && 
                 !template.AllowedUsers.Any(au => au.UserId == currentUser.Id) &&
@@ -599,6 +598,33 @@ public class TemplateService : ITemplateService
         }
     }
 
+    public async Task<ApiBaseResponse> GetTemplateQuestionsWithoutUserAsync(Guid templateId)
+    {
+        try
+        {
+            var template = await _repository.Template.GetTemplateByIdAsync(templateId, trackChanges: false);
+            if (template == null)
+            {
+                return new ApiBadRequestResponse("Template not found");
+            }
+
+            if (!template.IsPublic)
+            {
+                return new ApiBadRequestResponse("You do not have permission to view this template's questions");
+            }
+
+            var questions = await _repository.Question.GetTemplateQuestionsAsync(templateId, trackChanges: false);
+            var questionsDto = _mapper.Map<IEnumerable<QuestionDto>>(questions);
+
+            return new ApiOkResponse<IEnumerable<QuestionDto>>(questionsDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error in {nameof(GetTemplateQuestionsAsync)}: {ex.Message}");
+            return new ApiBadRequestResponse($"Error retrieving template questions: {ex.Message}");
+        }
+    }
+    
     public async Task<ApiBaseResponse> AddQuestionToTemplateAsync(Guid templateId, QuestionForCreationDto questionDto, User currentUser)
     {
         try
@@ -609,7 +635,6 @@ public class TemplateService : ITemplateService
                 return new ApiBadRequestResponse("Template not found");
             }
 
-            // Check if user has Admin role
             bool isAdmin = false;
             if (currentUser != null)
             {
@@ -617,13 +642,11 @@ public class TemplateService : ITemplateService
                 isAdmin = userRoles.Any(r => r.Name == "Admin");
             }
 
-            // Only the creator or admins can add questions
             if (template.CreatorId != currentUser.Id && !isAdmin)
             {
                 return new ApiBadRequestResponse("You do not have permission to add questions to this template");
             }
 
-            // Check question type limits (up to 4 questions of each type)
             var existingQuestions = await _repository.Question.GetTemplateQuestionsAsync(templateId, trackChanges: false);
             var questionsOfType = existingQuestions.Count(q => q.Type == questionDto.Type);
             if (questionsOfType >= 4)
@@ -631,7 +654,6 @@ public class TemplateService : ITemplateService
                 return new ApiBadRequestResponse($"Maximum of 4 questions of type {questionDto.Type} reached");
             }
 
-            // Create the question
             var question = new Question
             {
                 Id = Guid.NewGuid(),
@@ -666,7 +688,6 @@ public class TemplateService : ITemplateService
                 return new ApiBadRequestResponse("Template not found");
             }
 
-            // Check if user has Admin role
             bool isAdmin = false;
             if (currentUser != null)
             {
@@ -674,7 +695,6 @@ public class TemplateService : ITemplateService
                 isAdmin = userRoles.Any(r => r.Name == "Admin");
             }
 
-            // Only the creator or admins can update questions
             if (template.CreatorId != currentUser.Id && !isAdmin)
             {
                 return new ApiBadRequestResponse("You do not have permission to update questions in this template");
@@ -686,7 +706,6 @@ public class TemplateService : ITemplateService
                 return new ApiBadRequestResponse("Question not found in this template");
             }
 
-            // Update question properties
             question.Title = questionDto.Title;
             question.Description = questionDto.Description;
             question.ShowInResults = questionDto.ShowInResults;
@@ -713,7 +732,6 @@ public class TemplateService : ITemplateService
                 return new ApiBadRequestResponse("Template not found");
             }
 
-            // Check if user has Admin role
             bool isAdmin = false;
             if (currentUser != null)
             {
@@ -721,7 +739,6 @@ public class TemplateService : ITemplateService
                 isAdmin = userRoles.Any(r => r.Name == "Admin");
             }
 
-            // Only the creator or admins can delete questions
             if (template.CreatorId != currentUser.Id && !isAdmin)
             {
                 return new ApiBadRequestResponse("You do not have permission to delete questions from this template");
@@ -755,7 +772,6 @@ public class TemplateService : ITemplateService
                 return new ApiBadRequestResponse("Template not found");
             }
 
-            // Check if user has Admin role
             bool isAdmin = false;
             if (currentUser != null)
             {
@@ -763,17 +779,14 @@ public class TemplateService : ITemplateService
                 isAdmin = userRoles.Any(r => r.Name == "Admin");
             }
 
-            // Only the creator or admins can reorder questions
             if (template.CreatorId != currentUser.Id && !isAdmin)
             {
                 return new ApiBadRequestResponse("You do not have permission to reorder questions in this template");
             }
 
-            // Get all questions for this template
             var questions = await _repository.Question.GetTemplateQuestionsAsync(templateId, trackChanges: true);
             var questionDict = questions.ToDictionary(q => q.Id, q => q);
 
-            // Update order indexes based on the provided list
             for (int i = 0; i < questionIds.Count; i++)
             {
                 var questionId = questionIds[i];

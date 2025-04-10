@@ -55,12 +55,6 @@ public class RoleService : IRoleService
     {
         try
         {
-            if (currentUser == null)
-            {
-                return new ApiBadRequestResponse("Current user not found");
-            }
-
-            // Check if current user is an admin
             var currentUserRoles = await _repository.Role.GetUserRolesAsync(currentUser.Id, trackChanges: false);
             if (!currentUserRoles.Any(r => r.Name == "Admin"))
             {
@@ -79,7 +73,6 @@ public class RoleService : IRoleService
                 return new ApiBadRequestResponse($"Role '{roleName}' not found");
             }
 
-            // Check if user already has this role
             var userRoles = await _repository.Role.GetUserRolesAsync(userId, trackChanges: false);
             if (userRoles.Any(r => r.Id == role.Id))
             {
@@ -107,7 +100,6 @@ public class RoleService : IRoleService
                 return new ApiBadRequestResponse("Current user not found");
             }
 
-            // Check if current user is an admin
             var currentUserRoles = await _repository.Role.GetUserRolesAsync(currentUser.Id, trackChanges: false);
             if (!currentUserRoles.Any(r => r.Name == "Admin"))
             {
@@ -126,7 +118,6 @@ public class RoleService : IRoleService
                 return new ApiBadRequestResponse($"Role '{roleName}' not found");
             }
 
-            // Check if user has this role
             var userRoles = await _repository.Role.GetUserRolesAsync(userId, trackChanges: false);
             if (!userRoles.Any(r => r.Id == role.Id))
             {

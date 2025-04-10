@@ -86,7 +86,7 @@ public sealed class AuthenticationService : IAuthenticationService
         var refreshToken = GenerateRefreshToken();
 
         _user.RefreshToken = refreshToken;
-        _user.RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(int.Parse(_jwtConfiguration.Expires));
+        _user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
 
         _manager.User.UpdateUser(_user);
         await _manager.SaveAsync();
@@ -109,7 +109,8 @@ public sealed class AuthenticationService : IAuthenticationService
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, _user.Name),
-            new Claim(ClaimTypes.Email, _user.Email)
+            new Claim(ClaimTypes.Email, _user.Email),
+            new Claim(ClaimTypes.NameIdentifier, _user.Id.ToString())
         };
         
         var userRoles = await _manager.Role.GetUserRolesAsync(_user.Id, trackChanges: false);
@@ -195,8 +196,18 @@ public sealed class AuthenticationService : IAuthenticationService
     public async Task<User> GetCurrentUserFromTokenAsync(string token)
     {
         var principal = GetPrincipalFromExpiredToken(token);
+        
+        var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(userId) && Guid.TryParse(userId, out var userGuid))
+        {
+            var userById = await _manager.User.GetUserByIdAsync(userGuid, trackChanges: false);
+            if (userById != null)
+            {
+                return userById;
+            }
+        }
+        
         var userEmail = principal.FindFirst(ClaimTypes.Email)?.Value;
-
         if (string.IsNullOrEmpty(userEmail))
         {
             return null;

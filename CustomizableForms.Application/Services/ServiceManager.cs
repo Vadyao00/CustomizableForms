@@ -3,6 +3,7 @@ using Contracts.IRepositories;
 using Contracts.IServices;
 using CustomizableForms.Domain.ConfigurationModels;
 using CustomizableForms.LoggerService;
+using CustomizableForms.Persistance;
 using CustomizableForms.Persistance.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
@@ -33,7 +34,6 @@ public class ServiceManager(
         new TagService(repositoryManager, logger, mapper));
     private readonly Lazy<IRoleService> _roleService = new(() => 
         new RoleService(repositoryManager, logger));
-
     public IAuthenticationService AuthenticationService => _authenticationService.Value;
     public IUserService UserService => _userService.Value;
     public ITemplateService TemplateService => _templateService.Value;

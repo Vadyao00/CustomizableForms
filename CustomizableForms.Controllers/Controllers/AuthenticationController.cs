@@ -21,7 +21,6 @@ public class AuthenticationController(IServiceManager service, IHttpContextAcces
         
         return StatusCode(201);
     }
-
     [HttpPost("login")]
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> Authenticate([FromBody] UserForAuthenticationDto user)
@@ -32,10 +31,19 @@ public class AuthenticationController(IServiceManager service, IHttpContextAcces
 
         var tokenDto = await service.AuthenticationService.CreateToken(populateExp: true);
 
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.None,
+            Expires = DateTime.UtcNow.AddHours(1),
+            Path = "/"
+        };
+        
         var context = accessor.HttpContext;
-        context.Response.Cookies.Append("AccessToken", tokenDto.AccessToken);
-        context.Response.Cookies.Append("RefreshToken", tokenDto.RefreshToken);
+        context.Response.Cookies.Append("AccessToken", tokenDto.AccessToken, cookieOptions);
+        context.Response.Cookies.Append("RefreshToken", tokenDto.RefreshToken, cookieOptions);
 
-        return Ok();
+        return Ok(tokenDto);
     }
 }

@@ -27,5 +27,10 @@ public static class ModelBuilderExtensions
                 UserId = adminUser.Id,
                 RoleId = Guid.Parse("8D04DCE2-969A-435D-BBA4-DF3F325983DC")
             });
+            modelBuilder.Entity<UserRole>().HasData(new UserRole
+            {
+                UserId = adminUser.Id,
+                RoleId = Guid.Parse("2C5E174E-3B0E-446F-86AF-483D56FD7210")
+            });
         }
     }

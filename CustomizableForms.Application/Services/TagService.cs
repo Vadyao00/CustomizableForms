@@ -78,12 +78,10 @@ public class TagService : ITagService
         {
             var tags = await _repository.Tag.GetAllTagsAsync(trackChanges: false);
             
-            // Calculate tag weights based on usage count
             var maxCount = tags.Max(t => t.TemplateTags?.Count ?? 0);
             var tagCloud = tags.Select(t => new TagCloudItemDto
             {
                 Name = t.Name,
-                // Normalize weight between 1-5 based on usage count
                 Weight = maxCount > 0 
                     ? (int)Math.Ceiling((t.TemplateTags?.Count ?? 0) * 5.0 / maxCount) 
                     : 1

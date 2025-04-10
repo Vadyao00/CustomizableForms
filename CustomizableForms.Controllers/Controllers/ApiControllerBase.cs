@@ -1,4 +1,6 @@
-﻿using Contracts.IServices;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Contracts.IServices;
 using CustomizableForms.Domain.Entities;
 using CustomizableForms.Domain.ErrorModels;
 using CustomizableForms.Domain.Responses;
@@ -20,14 +22,33 @@ public class ApiControllerBase : Controller
     
     protected async Task<User> GetCurrentUserAsync()
     {
-        var token = _httpContextAccessor.HttpContext?.Request.Cookies["AccessToken"];
+        if (!_httpContextAccessor.HttpContext.Request.Headers.TryGetValue("Authorization", out var authHeader))
+        {
+            return null;
+        }
+
+        string authHeaderValue = authHeader.ToString();
+        
+        if (!authHeaderValue.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        string token = authHeaderValue.Substring("Bearer ".Length).Trim();
+        
         if (string.IsNullOrEmpty(token))
         {
             return null;
         }
 
-        var currentUser = await _serviceManager.AuthenticationService.GetCurrentUserFromTokenAsync(token);
-        return currentUser;
+        try
+        {
+            return await _serviceManager.AuthenticationService.GetCurrentUserFromTokenAsync(token);
+        }
+        catch
+        {
+            return null;
+        }
     }
     
     [HttpHead]

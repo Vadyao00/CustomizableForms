@@ -2,6 +2,7 @@
 using CustomizableForms.Controllers.Extensions;
 using CustomizableForms.Controllers.Filters;
 using CustomizableForms.Domain.DTOs;
+using CustomizableForms.Domain.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -57,10 +58,9 @@ public class TemplateController(IServiceManager serviceManager, IHttpContextAcce
     public async Task<IActionResult> GetTemplate(Guid id)
     {
         var currentUser = await GetCurrentUserAsync();
-        if (currentUser == null)
+        if (currentUser is null)
         {
-            // For non-authenticated users, we'll still show public templates
-            var baseResult = await _serviceManager.TemplateService.GetTemplateByIdAsync(id, null);
+            var baseResult = await _serviceManager.TemplateService.GetTemplateByIdWithoutTokenAsync(id);
             if (!baseResult.Success)
                 return ProccessError(baseResult);
 
@@ -156,10 +156,12 @@ public class TemplateController(IServiceManager serviceManager, IHttpContextAcce
     public async Task<IActionResult> GetTemplateQuestions(Guid id)
     {
         var currentUser = await GetCurrentUserAsync();
-        if (currentUser == null)
-            return Unauthorized();
-
-        var result = await _serviceManager.TemplateService.GetTemplateQuestionsAsync(id, currentUser);
+        ApiBaseResponse result;
+        if (currentUser is not null)
+            result = await _serviceManager.TemplateService.GetTemplateQuestionsAsync(id, currentUser);
+        else
+            result = await _serviceManager.TemplateService.GetTemplateQuestionsWithoutUserAsync(id);
+        
         if (!result.Success)
             return ProccessError(result);
 
